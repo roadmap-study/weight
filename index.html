@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>体重追踪图表与图片预览</title>
+        <style>
+        /* 确保canvas父容器大小合适 */
+        .chart-container {
+            width: 80%; /* 你可以根据需求调整宽度 */
+            max-width: 800px; /* 设置最大宽度 */
+            margin: auto; /* 居中显示 */
+        }
+        /* 自定义工具提示的样式 */
+        .tooltip {
+            position: absolute;
+            opacity: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .tooltip img {
+            width: 100px;
+            height: auto;
+        }
+
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body>
+
+    <h2>体重追踪</h2>
+    
+    <div class="chart-container">
+        <canvas id="weightChart"></canvas>
+    </div>
+    
+    
+    <div id="tooltip" class="tooltip"></div>
+
+
+    <script>
+        // 假设的体重数据和日期
+        const weights = [
+            93.05, // 2024-03-13
+        ]; // 示例数据，实际中应为变化的体重数据
+        const labels = [];
+
+        // 生成接下来90天的日期
+        for (let i = 0; i < 90; i++) {
+            const date = new Date(2024, 2, 13 + i); // 注意月份从0开始，2代表3月
+            const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+            labels.push(formattedDate);
+        }
+
+        const imageUrls = [ // 每个数据点的图片数组
+            ["https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png", "https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png"],
+            ["https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png", "https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png"],
+            ["https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png", "https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png"]
+        ];
+
+        const customTooltipHandler = function(tooltipModel) {
+            // Tooltip元素
+            const tooltipEl = document.getElementById('chartjs-tooltip');
+
+            // 如果没有tooltip数据，就隐藏tooltip
+            if (tooltipModel.opacity === 0) {
+                tooltipEl.style.opacity = 0;
+                return;
+            }
+
+            // 设置图片HTML，这里只是示例图片，实际上应该根据数据点动态更改
+            let tooltipHtml = `
+                <img src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.brightsideofthesun.com%2F2024%2F1%2F5%2F24026733%2Fphoenix-suns-rapid-narrative-switches-demonstrate-how-long-the-season-is&psig=AOvVaw1JenDRG9oTKAEFHKJoShuk&ust=1710465554862000&source=images&cd=vfe&opi=89978449&ved=0CBMQjRxqFwoTCNC26-_K8oQDFQAAAAAdAAAAABAN" />
+                <img src="https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.brightsideofthesun.com%2F2024%2F1%2F5%2F24026733%2Fphoenix-suns-rapid-narrative-switches-demonstrate-how-long-the-season-is&psig=AOvVaw1JenDRG9oTKAEFHKJoShuk&ust=1710465554862000&source=images&cd=vfe&opi=89978449&ved=0CBMQjRxqFwoTCNC26-_K8oQDFQAAAAAdAAAAABAN" />
+            `;
+
+            // 如果有多张图片
+            if (Array.isArray(tooltipModel.dataPoints)) {
+                const index = tooltipModel.dataPoints[0].index;
+                // 假设imagesPerPoint是包含多张图片的数组
+                const images = imagesPerPoint[index];
+                tooltipHtml = images.map(src => `<img src="${src}" />`).join('');
+            }
+
+            // 设置tooltip的HTML
+            tooltipEl.innerHTML = tooltipHtml;
+
+            // 显示tooltip
+            tooltipEl.style.opacity = 1;
+            tooltipEl.style.left = tooltipModel.caretX + 'px';
+            tooltipEl.style.top = tooltipModel.caretY + 'px';
+        };
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: 'kg',
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: weights,
+                fill: false,
+            }]
+        };
+
+        const image = new Image(20, 20);
+        image.src = 'https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png';
+
+        const config = {
+            type: 'line',
+            data: data,
+            options: {
+                tooltips: {
+                    enabled: false,
+                    mode: 'index',
+                    position: 'nearest',
+                    custom: function(tooltipModel) {
+                        // 隐藏工具提示
+                        if (tooltipModel.opacity === 0) {
+                            tooltipEl.style.opacity = 0;
+                            return;
+                        }
+
+                        // 设置工具提示的内容
+                        if (tooltipModel.body) {
+                            const bodyLines = tooltipModel.body.map(bodyItem => bodyItem.lines);
+
+                            // 获取当前悬停的数据点索引
+                            const dataIndex = tooltipModel.dataPoints[0].index;
+
+                            // 假设每个数据点都有一个图片数组
+                            const imageHtml = data.datasets[0].data[dataIndex].images.map(src => `<img src="${src}" />`).join('');
+                            tooltipEl.innerHTML = imageHtml;
+
+                            // 显示工具提示
+                            tooltipEl.style.opacity = 1;
+                            tooltipEl.style.left = tooltipModel.caretX + 'px';
+                            tooltipEl.style.top = tooltipModel.caretY + 'px';
+                        }
+                    }
+                },
+                onHover: function(event, chartElement) {
+                    // 设置鼠标悬停时的样式
+                    event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+
+                    if (chartElement.length == 1){
+
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        usePointStyle: true,
+                        callbacks: {
+                            labelPointStyle: (context) => {
+                                console.log(context)
+                                return {
+                                    pointStyle: image
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const weightChart = new Chart(
+            document.getElementById('weightChart'),
+            config
+        );
+        // 为每个数据点附加图片数组
+        weightChart.data.datasets[0].data[0].images = ['https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png', 'path/to/your/image2.jpg']; // 第一个数据点的图片
+        weightChart.data.datasets[0].data[1].images = ['path/to/your/image3.jpg', 'path/to/your/image4.jpg']; // 第二个数据点的图片
+        // ...以此类推，为
+
+    </script>
+
+    </body>
+</html>
+    
+
+
