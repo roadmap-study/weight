@@ -113,6 +113,16 @@
         const image = new Image(20, 20);
         image.src = 'https://www.si.com/.image/ar_1:1%2Cc_fill%2Ccs_srgb%2Cq_auto:good%2Cw_1200/MjAzMDA0MTA0NzU3MjI1MDI3/suns.png';
 
+        // 
+        const image3_weight = new Image(20, 20);
+        image3_weight.src = './2024_03_16_weight.jpg';
+        const images = [
+            image,
+            image3_weight,
+            image3_weight,
+            image3_weight,
+        ];
+
         const config = {
             type: 'line',
             data: data,
@@ -160,8 +170,10 @@
                         callbacks: {
                             labelPointStyle: (context) => {
                                 console.log(context)
+                                let index = context.dataIndex;
+                                console.log(index)
                                 return {
-                                    pointStyle: image
+                                    pointStyle: images[index],
                                 }
                             }
                         }
